@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from model_utils import trunc_normal_, PatchEmbed, MLP, Attention, TransformerBlock
+from .model_utils import trunc_normal_, PatchEmbed, MLP, Attention, TransformerBlock
 
 # MAE encoder
 class MAEEncoder(nn.Module):

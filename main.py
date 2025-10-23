@@ -12,7 +12,7 @@ def run_training_example():
     
     # Mock dataset
     B, N = 32, 100
-    
+
     ds = TensorDataset(imgs, aus, labels)
     loader = DataLoader(ds, batch_size=4, shuffle=True)
 

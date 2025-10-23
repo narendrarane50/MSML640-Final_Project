@@ -13,12 +13,23 @@ data:
 model:
   num_classes: 7
 
+au_model:
+  mask_ratio: 0.75
+  patch_size: 16
+  decoder_embed_dim: 512
+  decoder_depth: 8
+  decoder_num_heads: 16
+  decoder_mlp_ratio: 4.0
+  in_chans: 3
+
 train:
   epochs: 10
   batch_size: 64
   num_workers: 4
   lr: 3.0e-4
   wd: 0.01
+  weight_decay: 1.0e-4
+  save_dir: "logs/checkpoints_baseline"
 
 eval:
   batch_size: 128

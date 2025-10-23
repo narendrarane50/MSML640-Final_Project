@@ -62,7 +62,7 @@ def get_commit_history(repo_path=".", max_commits=50, save_csv=True):
 
 
 if __name__ == "__main__":
-    repo_dir = "https://github.com/narendrarane50/MSML640-Final_Project.git"  
+    repo_dir = 'github.com/narendrarane50/MSML640-Final_Project'  
     history = get_commit_history(repo_dir, max_commits=20)
     print(f"Found {len(history)} commits.")
     for c in history[:5]:  # print sample

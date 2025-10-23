@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.model_utils import trunc_normal_, PatchEmbed, MLP, Attention, TransformerBlock
+from .model_utils import trunc_normal_, PatchEmbed, MLP, Attention, TransformerBlock
 
 class AUToken(nn.Module):
     """Encodes a vector of AUs (B, num_aus) into a single token (B, 1, D)."""
@@ -118,12 +118,12 @@ class AUConditionedMAE(nn.Module):
         trunc_normal_(self.mask_token, std=0.02)
 
         self.decoder = MAEDecoder(
-            num_patches=self.num_patches,
-            patch_dim=self.patch_dim,
-            embed_dim=cfg.decoder_embed_dim,
-            depth=cfg.decoder_depth,
-            num_heads=cfg.decoder_num_heads,
-            mlp_ratio=cfg.decoder_mlp_ratio,
+        embed_dim=cfg.decoder_embed_dim,
+        depth=cfg.decoder_depth,
+        num_heads=cfg.decoder_num_heads,
+        mlp_ratio=cfg.decoder_mlp_ratio,
+        patch_size=cfg.patch_size,
+        in_chans=cfg.in_chans,
         )
 
         # Optional classifier head (FER)
