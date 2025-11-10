@@ -33,3 +33,27 @@ train:
 
 eval:
   batch_size: 128
+
+
+# ======================================================
+# FER-2013 Configuration
+# ======================================================
+fer2013:
+  root_dir: "datasets/FER-2013"     # top-level folder
+  train_dir: "datasets/FER-2013/train"
+  val_dir: "datasets/FER-2013/test"
+  img_size: 224
+
+  num_classes: 7
+
+  train:
+    epochs: 10
+    batch_size: 64
+    num_workers: 4
+    lr: 3.0e-4
+    wd: 0.01
+    weight_decay: 1.0e-4
+    save_dir: "logs/checkpoints_fer2013"
+
+  eval:
+    batch_size: 128

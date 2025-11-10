@@ -38,6 +38,21 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
             get_val_transforms(cfg["data"]["img_size"]),
             root_dir=cfg["data"].get("root_dir")
         )
+    elif dataset == "fer2013":
+        from torchvision.datasets import ImageFolder
+        from torch.utils.data import DataLoader
+
+        data_cfg = cfg["fer2013"]
+        train_dir = data_cfg["train_dir"]
+        val_dir   = data_cfg["val_dir"]
+
+        train_tfms = get_train_transforms(data_cfg["img_size"])
+        val_tfms   = get_val_transforms(data_cfg["img_size"])
+
+        print(f"\n[INFO] Loading FER-2013 from:\n  Train: {train_dir}\n  Val:   {val_dir}\n")
+
+        train_ds = ImageFolder(root=train_dir, transform=train_tfms)
+        val_ds   = ImageFolder(root=val_dir,   transform=val_tfms)
     else:
         raise ValueError("Implement other datasets similarly.")
 
