@@ -3,14 +3,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import cv2
-import mediapipe as mp
-import numpy as np
-from PIL import Image
-
-mp_face_mesh = mp.solutions.face_mesh.FaceMesh(static_image_mode=True, refine_landmarks=True)
-
-
 class PoseNormalizer(nn.Module):
     """
     Enhanced Spatial Transformer Network (2D affine) for pose normalization.
@@ -71,27 +63,3 @@ class PoseNormalizer(nn.Module):
             x, grid, align_corners=False, mode="bilinear", padding_mode="border"
         )
         return x_out
-
-def normalize_face_pose(img):
-    """Return a pose-normalized version of the image."""
-    if isinstance(img, Image.Image):
-        img = np.array(img)
-
-    h, w, _ = img.shape
-    results = mp_face_mesh.process(cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
-    if not results.multi_face_landmarks:
-        return Image.fromarray(img)  # fallback to original if face not detected
-
-    landmarks = results.multi_face_landmarks[0].landmark
-    left_eye = np.array([landmarks[33].x * w, landmarks[33].y * h])
-    right_eye = np.array([landmarks[263].x * w, landmarks[263].y * h])
-
-    # Compute rotation
-    dx, dy = right_eye - left_eye
-    angle = np.degrees(np.arctan2(dy, dx))
-    center = tuple(np.mean([left_eye, right_eye], axis=0).astype(int))
-
-    # Rotate to horizontal eyes
-    rot_mat = cv2.getRotationMatrix2D(center, angle, 1.0)
-    rotated = cv2.warpAffine(img, rot_mat, (w, h), flags=cv2.INTER_LINEAR)
-    return Image.fromarray(rotated)
