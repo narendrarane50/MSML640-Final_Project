@@ -21,12 +21,25 @@ class CSVDataset(Dataset):
                     path = os.path.join(root_dir, path)
                 self.samples.append((path, label))
 
-    def __getitem__(self, idx):
-        path, label = self.samples[idx]
+def __getitem__(self, idx):
+    path, label = self.samples[idx]
+
+    path = path.replace("\\", "/")
+
+    if self.root_dir and not os.path.isabs(path):
+        path = os.path.join(self.root_dir, path)
+
+    if not os.path.exists(path):
+        print(f"[!] Warning: Missing file -> {path}")
+        return None  
+    try:
         img = Image.open(path).convert("RGB")
-        if self.transform:
-            img = self.transform(img)
-        return img, label
+    except Exception as e:
+        print(f"[!] Failed to open image {path}: {e}")
+        return None
+    if self.transform:
+        img = self.transform(img)
+    return img, label
 
     def __len__(self):
         return len(self.samples)

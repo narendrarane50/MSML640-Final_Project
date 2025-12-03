@@ -2,8 +2,10 @@
 #   root_dir: "/path/to/rafdb/images"   # optional; leave null if CSV has absolute paths
 #   train_csv: "splits/rafdb_train.csv"
 #   val_csv:   "splits/rafdb_val.csv"
-#   img_size: 224
-
+#   img_s;ize: 224
+# RAFDB:
+#    data:
+        # root_dir:
 data:
   root_dir: "datasets/RAF-DB"
   train_csv: "splits/rafdb_train.csv"
