@@ -10,6 +10,10 @@ data:
   val_csv:   "splits/rafdb_val.csv"
   img_size: 224
 
+  # NEW: AU CSVs for AU-MAE and Ablation C
+  au_train_csv: "splits/aus_raf_train.csv"
+  au_val_csv:   "splits/aus_raf_test.csv"
+
 model:
   num_classes: 7
 
