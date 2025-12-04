@@ -72,7 +72,7 @@ class AUConditionedMAEConfig:
     mask_ratio: float = 0.75
 
     # AU conditioning
-    num_aus: int = 17
+    num_aus: int = 20
     conditioning: Literal["tokens", "film", "both"] = "both"
     au_hidden: int = 128
     film_hidden: int = 256
