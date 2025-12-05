@@ -11,6 +11,8 @@ from .evaluate import evaluate
 # --- Ablation C imports ---
 from models.au_conditioned_mae import AUConditionedMAE, AUConditionedMAEConfig
 from data.dataset_rafdb_au import RAFDB_AU_Dataset
+import numpy as np
+from sklearn.metrics import balanced_accuracy_score, f1_score, confusion_matrix
 
 
 def load_config(cfg_path="config.yaml"):
@@ -159,7 +161,6 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
     for param in modelC.parameters():
         param.requires_grad = False
 
-    # Unfreeze last 6 encoder blocks (6,7,8,9,10,11)
     trainable_blocks = list(range(6, 12))
 
     for idx in trainable_blocks:
@@ -208,52 +209,77 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
             enc_params.append(param)
 
     optimizerC = torch.optim.AdamW([
-        {"params": enc_params,  "lr": cfg["train"]["lr"] * 0.1},
+        {"params": enc_params,  "lr": cfg["train"]["lr"] * 0.05},
         {"params": head_params, "lr": cfg["train"]["lr"]},
     ], weight_decay=cfg["train"]["wd"])
 
-    # 6) Train 10 epochs
-    criterionC = nn.CrossEntropyLoss()
+    # 6) Train for cfg["train"]["epochs"] epochs (or 10 if you're testing)
+    criterionC = nn.CrossEntropyLoss(label_smoothing=0.1)
     for epoch in range(cfg["train"]["epochs"]):
         modelC.train()
         running = 0.0
         for imgs, aus, labels in train_loaderC:
             imgs, aus, labels = imgs.to(device), aus.to(device), labels.to(device)
             optimizerC.zero_grad()
-            out = modelC(imgs, aus, labels, return_loss=True)
-            loss = out["loss_total"]
+            # Forward WITHOUT internal loss; we compute our own with label smoothing
+            out = modelC(imgs, aus, labels=None, return_loss=False)
+            logits = out["logits"]
+            loss = criterionC(logits, labels)
             loss.backward()
             optimizerC.step()
             running += loss.item() * imgs.size(0)
         print(f"[Ablation C] Epoch {epoch+1} | loss={running/len(train_loaderC.dataset):.4f}")
 
-    # 7) Final evaluation
-    def eval_wrapper(model, loader, device):
+    # --------------------------
+    # Ablation C Evaluation (full metrics)
+    # --------------------------
+    
+
+    def evaluate_ablation_c(model, dataloader, device):
         model.eval()
-        correct, total = 0, 0
+        all_preds = []
+        all_labels = []
+
         with torch.no_grad():
-            for imgs, aus, labels in loader:  # <--- AUS INCLUDED
-                imgs, aus, labels = imgs.to(device), aus.to(device), labels.to(device)
+            for imgs, aus, labels in dataloader:
+                imgs = imgs.to(device)
+                aus = aus.to(device) 
+                labels = labels.to(device)
 
-                # use AUs during forward pass
-                out = model(imgs, aus, labels=None, return_loss=False)
+                out = model(imgs, aus, labels=None, mask_ratio=0.0, return_loss=False)
+                logits = out["logits"]
 
-                preds = out["logits"].argmax(1)
-                correct += (preds == labels).sum().item()
-                total += labels.size(0)
+                preds = torch.argmax(logits, dim=1)
 
-        acc = correct / total
-        return {"accuracy": acc}
+                all_preds.extend(preds.cpu().numpy())
+                all_labels.extend(labels.cpu().numpy())
 
-    metrics_C = eval_wrapper(modelC, val_loaderC, device)
+        all_preds = np.array(all_preds)
+        all_labels = np.array(all_labels)
 
-    print("Ablation C metrics:", metrics_C)
+        acc = (all_preds == all_labels).mean()
+        bal_acc = balanced_accuracy_score(all_labels, all_preds)
+        macro_f1 = f1_score(all_labels, all_preds, average="macro")
+        cm = confusion_matrix(all_labels, all_preds)
+
+        return {
+            "accuracy": acc,
+            "balanced_accuracy": bal_acc,
+            "macro_f1": macro_f1,
+            "confusion_matrix": cm
+        }
+
+
+    metrics_c = evaluate_ablation_c(modelC, val_loaderC, device)
+
+
+    print("Ablation C metrics:", metrics_c)
 
 
     return {
         "no_pose": metrics_A,
         "with_pose": metrics_B,
-        "au_mae_finetune": metrics_C
+        "au_mae_finetune": metrics_c
     }
 
     # return {"au_mae_finetune": metrics_C}

@@ -18,7 +18,7 @@ model:
   num_classes: 7
 
 au_model:
-  mask_ratio: 0.75
+  mask_ratio: 0.50
   patch_size: 16
   decoder_embed_dim: 512
   decoder_depth: 8

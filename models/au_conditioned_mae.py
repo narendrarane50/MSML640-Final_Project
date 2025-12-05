@@ -69,7 +69,7 @@ class AUConditionedMAEConfig:
     decoder_mlp_ratio: float = 4.0
 
     # Masking
-    mask_ratio: float = 0.75
+    mask_ratio: float = 0.50
 
     # AU conditioning
     num_aus: int = 20
@@ -247,7 +247,7 @@ class AUConditionedMAE(nn.Module):
         pos.append(self.pos_embed[:, :1, :])  # cls
         if self.use_tokens:
             # Use cls pos for AU as well (or a learnable separate parameter; this works fine)
-            pos.append(self.pos_embed[:, :1, :])
+            pos.append(self.pos_embed[:, 1:2, :])
         # no pos for visible patches here because x_vis already had positional added earlier
         if len(pos) > 0:
             x_enc[:, :len(pos), :] = x_enc[:, :len(pos), :] + torch.cat(pos, dim=1)
@@ -280,7 +280,8 @@ class AUConditionedMAE(nn.Module):
             logits = self.classifier(pooled)
             out["logits"] = logits
             if labels is not None:
-                out["loss_cls"] = F.cross_entropy(logits, labels)
+                # out["loss_cls"] = F.cross_entropy(logits, labels)
+                out["loss_cls"] = F.cross_entropy(logits, labels, label_smoothing=0.1)
 
         # ---- Decoder: re-insert masked tokens
         x_dec = self.encoder_to_decoder(x_enc)
@@ -327,7 +328,7 @@ class AUConditionedMAE(nn.Module):
 
         # Total loss if both heads present
         if "loss_cls" in out and return_loss:
-            out["loss_total"] = loss_recon + out["loss_cls"]
+            out["loss_total"] = loss_recon + 0.3 * out["loss_cls"]
         elif return_loss:
             out["loss_total"] = loss_recon
 
