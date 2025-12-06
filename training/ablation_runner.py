@@ -155,13 +155,13 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
     # for p in modelC.classifier.parameters():
     #     p.requires_grad = True
 
-    print("[Ablation C] Freezing encoder blocks 0–5, training blocks 6–11")
+    print("[Ablation C] Freezing encoder blocks 0–3, training blocks 4–11")
 
     # Freeze all parameters first
     for param in modelC.parameters():
         param.requires_grad = False
 
-    trainable_blocks = list(range(6, 12))
+    trainable_blocks = list(range(4, 12))
 
     for idx in trainable_blocks:
         for name, param in modelC.encoder.blocks[idx].named_parameters():
@@ -208,13 +208,18 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
         else:
             enc_params.append(param)
 
+    # optimizerC = torch.optim.AdamW([
+    #     {"params": enc_params,  "lr": cfg["train"]["lr"] * 0.05},
+    #     {"params": head_params, "lr": cfg["train"]["lr"]},
+    # ], weight_decay=cfg["train"]["wd"])
+
     optimizerC = torch.optim.AdamW([
-        {"params": enc_params,  "lr": cfg["train"]["lr"] * 0.05},
-        {"params": head_params, "lr": cfg["train"]["lr"]},
+        {"params": enc_params,  "lr": 1e-4},
+        {"params": head_params, "lr": 5e-4},
     ], weight_decay=cfg["train"]["wd"])
 
     # 6) Train for cfg["train"]["epochs"] epochs (or 10 if you're testing)
-    criterionC = nn.CrossEntropyLoss(label_smoothing=0.1)
+    criterionC = nn.CrossEntropyLoss(label_smoothing=0.0)
     for epoch in range(cfg["train"]["epochs"]):
         modelC.train()
         running = 0.0
@@ -222,7 +227,7 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
             imgs, aus, labels = imgs.to(device), aus.to(device), labels.to(device)
             optimizerC.zero_grad()
             # Forward WITHOUT internal loss; we compute our own with label smoothing
-            out = modelC(imgs, aus, labels=None, return_loss=False)
+            out = modelC(imgs, aus, labels=None, mask_ratio=0.0, return_loss=False)
             logits = out["logits"]
             loss = criterionC(logits, labels)
             loss.backward()

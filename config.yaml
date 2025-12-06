@@ -27,7 +27,7 @@ au_model:
   in_chans: 3
 
 train:
-  epochs: 10
+  epochs: 20
   batch_size: 64
   num_workers: 4
   lr: 3.0e-4
