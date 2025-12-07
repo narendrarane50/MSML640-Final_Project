@@ -13,6 +13,7 @@ from models.au_conditioned_mae import AUConditionedMAE, AUConditionedMAEConfig
 from data.dataset_rafdb_au import RAFDB_AU_Dataset
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score, f1_score, confusion_matrix
+from utils.logging_utils1 import save_metrics
 
 
 def load_config(cfg_path="config.yaml"):
@@ -35,6 +36,8 @@ def train_one_epoch(model, loader, optimizer, criterion, device="cuda"):
 def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
     cfg = load_config(cfg_path)
     device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    save_dir = cfg["train"]["save_dir"]
 
     # ----- datasets -----
     if dataset == "rafdb":
@@ -77,6 +80,7 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
         print(f"Epoch {epoch+1}/{cfg['train']['epochs']} | loss={tr_loss:.4f}")
     metrics_A = evaluate(model, val_loader, device)
     print("Ablation A metrics:", metrics_A)
+    save_metrics(metrics_A, save_dir, tag="ablation_A_no_pose")
 
     # ----- Ablation B: FER + PoseNormalizer -----
     print("\n[Ablation B] FER + PoseNormalizer")
@@ -124,6 +128,7 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
 
     metrics_B = evaluate(model2, val_loader, device)
     print("Ablation B metrics:", metrics_B)
+    save_metrics(metrics_B, save_dir, tag="ablation_B_pose")
 
     # ============================================
     # Ablation C — AU-MAE pretrained → Fine-tuned FER
@@ -279,6 +284,7 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
 
 
     print("Ablation C metrics:", metrics_c)
+    save_metrics(metrics_c, save_dir, tag="ablation_C_au_mae")
 
 
     return {
