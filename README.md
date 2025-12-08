@@ -1,87 +1,92 @@
 # AU-Conditioned MAE + Pose-Normalized FER  
 **Course:** MSML640 – Computer Vision  
+
 **Team Members:**  
-- **Prakhar P. Tiwari** – AU-MAE pretraining, backbone models, GitHub pipeline  
-- **Narendra R. Rane** – Pose normalization, dataset preparation, evaluation, ablation studies  
+- **Narendra Rane**   
+- **Prakhar P. Tiwari** 
 
 ---
 
-## 🧩 Project Overview
-This project develops a **robust Facial Expression Recognition (FER)** system capable of performing well in “in-the-wild” conditions.  
-We integrate **Action Unit (AU)-conditioned Masked Autoencoder (MAE)** pretraining with a **Pose Normalization** module to improve resilience to pose variation, occlusions, and data imbalance.
+## Project Overview
+This project explores improving **Facial Expression Recognition (FER)** robustness using two complementary ideas:
+1. **Pose Normalization** to reduce sensitivity to head pose variations.
+2. **AU‑Conditioned Masked Autoencoder (AU‑MAE)** pretraining using Action Unit supervision.
+
+The system is evaluated through controlled ablation studies on the **RAF‑DB** dataset.
 
 ---
 
-## 🎯 Objective
-1. Learn **pose-invariant features** via a Spatial Transformer-based Pose Normalizer.  
-2. Use **AU-conditioned MAE pretraining** to capture fine-grained facial cues.  
-3. Evaluate effectiveness through ablations and cross-dataset generalization.
+## Datasets
+- **RAF-DB**: Primary dataset for FER training and evaluation (7 emotion classes).
 
 ---
 
-## 🧠 Datasets
-| Dataset | Usage | Description |
-|----------|--------|-------------|
-| **RAF-DB** | Main training & validation | 7-class facial expression dataset |
-| **FER-2013** | Benchmark testing | In-the-wild grayscale dataset |
-| **AffectNet (partial)** | AU-MAE pretraining | Labeled + unlabeled large-scale face data |
-| **Custom Wild Data** | Bonus analysis | Self-collected occluded and angled faces |
+## Ablations Implemented
+- **Ablation A**: FER baseline (ResNet‑50).
+- **Ablation B**: FER + Pose Normalizer.
+- **Ablation C**: AU‑MAE pretrained → FER.
 
 ---
 
-## 🧪 Ablation Experiments
+## Setup Instructions (Kaggle – Required)
 
-| Experiment | Description | Accuracy | Balanced Accuracy | Macro F1 |
-|-------------|--------------|-----------|-------------------|-----------|
-| **Ablation A** | FER baseline (no pose normalization) | 81.45% | 69.20% | 0.717 |
-| **Ablation B** | FER + Pose Normalizer | 79.95% | 68.26% | 0.707 |
-
----
-
-## 📊 Evaluation Metrics
-- Accuracy, Balanced Accuracy, Macro-F1  
-- Confusion Matrix (per-class insights)  
-- Robustness analysis under pose and occlusion variation  
-
----
+### Step 1: Download RAF‑DB
+- Download the **"RAF‑DB"** dataset locally.
+- Then rename the downloaded folder as **"RAF-DB"**.
 
 
-## ⚙️ Environment Setup (Kaggle Only)
-
-You can run this project end-to-end on **Kaggle Notebooks** with GPU acceleration.
-
-### Steps
-
-1. **Create a New Kaggle Notebook**
-   - Go to https://www.kaggle.com/code
-   - Click **New Notebook → GPU (T4/P100)**
-   - Turn **Internet = ON** in notebook settings
-
-2. **Clone the Repository**
+### Step 2: Clone the project
+- Create a folder named **"MSML 640"** and open it in VS Code
+- Then run the below command in the VS Code terminal
    ```bash
-   !git clone https://github.com/narendrarane50/MSML640-Final_Project.git
-   %cd MSML640-Final_Project
+   git clone https://github.com/narendrarane50/MSML640-Final_Project.git
+   ```
+- Then create the **"datasets"** folder inside the **"MSML640-Final_Project"** folder and put the **"RAF-DB"** folder inside the **"datasets"** folder such that **"datasets/RAF-DB"**.
+- Then compress the **"MSML640-Final_Project"** folder.
 
-3. **Install Dependencies**  
-   (Most required libraries are preinstalled on Kaggle; install extras if needed)
+### Step 3: Create Kaggle Notebook
+- Go to Kaggle → Create → Notebook
+- On the right panel: Click Upload → Click New Dataset → Upload the compressed **"MSML640-Final_Project.zip"** folder → Dataset title: **"msml640project"** → Click Create
+
+### Step 4: Enable GPU
+- Open Notebook Settings
+- Set Accelerator → GPU (P100)
+- Start the session
+
+### Step 5: Move Project Files into Working Directory
+- Then in Notebook cell run
    ```bash
-   !pip install -r requirements.txt
+   !mkdir -p /kaggle/working/MSML640-Final_Project
+   !cp -r /kaggle/input/msml640project/MSML640-Final_Project/* /kaggle/working/MSML640-Final_Project/
+   %cd /kaggle/working/MSML640-Final_Project
+   !ls
+   ```
 
-4. **Attach Dataset**
-   - In the right sidebar of the Kaggle Notebook, click **Add Data → Your Datasets → RAF-DB / FER-2013**
-   - Ensure your dataset folder name matches what is referenced in `config.yaml`
-   - Example configuration:
-     ```yaml
-     dataset_root: "/kaggle/input/rafdb"
-     ```
-5. **Run Training / Evaluation**
-   - Once the environment and dataset are ready, run the training command below:
-     ```bash
-     !python main.py --config config.yaml --dataset rafdb
-     ```
-   - This will automatically:
-     - Load the configuration from `config.yaml`
-     - Train the FER model (baseline or Pose-Normalized version)
-     - Print epoch-wise loss, accuracy, and F1 metrics
-     - Save checkpoints and logs in `/kaggle/working/results/`
+---
 
+## Running the Experiments
+
+### AU‑MAE Pretraining
+- Run this first to generate **"au_mae_pretrained.pth"** model:
+   ```bash
+   !python main.py --config config.yaml --mode pretrain_au_mae
+   ```
+
+### Ablation A, B, and C (FER Training + Evaluation)
+- After AU‑MAE pretraining completes run the below command for Ablation A (FER baseline), B (FER + Pose Normalizer) and C (AU‑MAE fine‑tuned FER) and for saving the evaluation metrics to logs:
+   ```bash
+   !python main.py --config config.yaml --dataset rafdb
+   ```
+
+### Generating Confusion Matrix Images
+- After all ablations finish, run:
+   ```bash
+   !python scripts/plot_confusion_matrices.py
+   ```
+
+ ### Outputs
+ - Training logs
+ - Saved metrics (JSON / NPY)
+ - Confusion matrix images
+ - AU‑MAE pretrained weights (au_mae_pretrained.pth)
+ 
