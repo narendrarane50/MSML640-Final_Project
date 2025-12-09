@@ -1,4 +1,3 @@
-# pretrain_au_mae.py
 import os
 import yaml
 import torch
@@ -12,17 +11,11 @@ from data.transforms import get_train_transforms, get_val_transforms
 from models.au_conditioned_mae import AUConditionedMAE, AUConditionedMAEConfig
 
 
-# -----------------------------
-# Utility: Load YAML config
-# -----------------------------
 def load_config(path="config.yaml"):
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
 
-# -----------------------------
-# Utility: Build Dataloaders
-# -----------------------------
 def build_dataloaders(cfg):
     train_tfms = get_train_transforms(cfg["data"]["img_size"])
     val_tfms = get_val_transforms(cfg["data"]["img_size"])
@@ -45,9 +38,6 @@ def build_dataloaders(cfg):
     return train_loader, val_loader, train_ds, val_ds
 
 
-# -----------------------------
-# Utility: Save Reconstruction Grid
-# -----------------------------
 def save_reconstruction_grid(imgs, recons, epoch, out_dir, max_imgs=6):
     os.makedirs(out_dir, exist_ok=True)
     imgs = imgs[:max_imgs].cpu().permute(0, 2, 3, 1)
@@ -67,9 +57,6 @@ def save_reconstruction_grid(imgs, recons, epoch, out_dir, max_imgs=6):
     plt.close(fig)
 
 
-# -----------------------------
-# Pretraining Function
-# -----------------------------
 def pretrain_mae(model, train_loader, val_loader, cfg, device):
     optimizer = AdamW(
         model.parameters(),
@@ -99,9 +86,7 @@ def pretrain_mae(model, train_loader, val_loader, cfg, device):
         avg_train_loss = total_loss / len(train_loader)
         print(f"Epoch {epoch+1} | Train Recon Loss: {avg_train_loss:.4f}")
 
-        # -------------------
-        # Validation
-        # -------------------
+        
         model.eval()
         val_loss = 0.0
         with torch.no_grad():
@@ -113,10 +98,8 @@ def pretrain_mae(model, train_loader, val_loader, cfg, device):
         val_loss /= len(val_loader)
         print(f"Val Recon Loss: {val_loss:.4f}")
 
-        # Save checkpoint
         torch.save(model.state_dict(), os.path.join(save_dir, f"pretrain_epoch{epoch+1}.pth"))
 
-        # Save visual reconstructions (every few epochs)
         if (epoch + 1) % 2 == 0 or epoch == num_epochs - 1:
             imgs_vis, aus_vis, _ = next(iter(val_loader))
             imgs_vis, aus_vis = imgs_vis.to(device), aus_vis.to(device)
@@ -126,9 +109,6 @@ def pretrain_mae(model, train_loader, val_loader, cfg, device):
             save_reconstruction_grid(imgs_vis, recons, epoch + 1, vis_dir)
 
 
-# -----------------------------
-# Main
-# -----------------------------
 def pretrain_au_mae_main(cfg_path="config.yaml"):
     cfg = load_config(cfg_path)
 
@@ -143,7 +123,6 @@ def pretrain_au_mae_main(cfg_path="config.yaml"):
 
     train_loader, val_loader, train_ds, _ = build_dataloaders(cfg)
 
-    # Model config for pretraining (no classifier)
     model_cfg = AUConditionedMAEConfig(
         image_size=cfg["data"]["img_size"],
         num_classes=None,

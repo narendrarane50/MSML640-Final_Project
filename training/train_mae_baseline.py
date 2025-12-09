@@ -1,9 +1,4 @@
-"""
-train_mae_baseline.py
-------------------------------------------------------------
-Baseline training of AUConditionedMAE without AU inputs.
-Uses Logger class (logging_utils.py) and logs metrics to CSV.
-"""
+
 
 import os
 import yaml
@@ -24,9 +19,6 @@ from training.metrics import compute_metrics
 from utils.logging_utils import Logger
 
 
-# ------------------------------------------------------------
-# Load config.yaml
-# ------------------------------------------------------------
 def load_config(path="config.yaml"):
     with open(path, "r") as f:
         return yaml.safe_load(f)
@@ -59,9 +51,6 @@ def build_dataloaders(cfg):
     return train_loader, val_loader, num_classes
 
 
-# ------------------------------------------------------------
-# Training function
-# ------------------------------------------------------------
 def train_mae_baseline(model, train_loader, val_loader, cfg, device, logger):
     optimizer = AdamW(
         model.parameters(),
@@ -72,7 +61,7 @@ def train_mae_baseline(model, train_loader, val_loader, cfg, device, logger):
     save_dir = cfg["train"].get("save_dir", "checkpoints_baseline")
     os.makedirs(save_dir, exist_ok=True)
 
-    # CSV log setup
+    
     log_path = os.path.join(save_dir, "metrics_log.csv")
     if not os.path.exists(log_path):
         pd.DataFrame(columns=[
@@ -95,9 +84,7 @@ def train_mae_baseline(model, train_loader, val_loader, cfg, device, logger):
 
         avg_train_loss = total_loss / len(train_loader)
 
-        # -------------------
-        # Validation
-        # -------------------
+        
         model.eval()
         val_loss = 0.0
         all_preds, all_labels = [], []
@@ -113,7 +100,7 @@ def train_mae_baseline(model, train_loader, val_loader, cfg, device, logger):
         val_loss /= len(val_loader)
         metrics = compute_metrics(np.array(all_labels), np.array(all_preds))
 
-        # Log to console + file
+        
         msg = (
             f"Epoch {epoch+1}/{num_epochs} | "
             f"Train Loss: {avg_train_loss:.4f} | Val Loss: {val_loss:.4f} | "
@@ -124,7 +111,7 @@ def train_mae_baseline(model, train_loader, val_loader, cfg, device, logger):
         logger.write(msg)
         logger.write(f"Confusion Matrix:\n{metrics['confusion_matrix']}")
 
-        # Save metrics to CSV
+        
         pd.DataFrame([{
             "epoch": epoch + 1,
             "train_loss": avg_train_loss,
@@ -134,16 +121,14 @@ def train_mae_baseline(model, train_loader, val_loader, cfg, device, logger):
             "macro_f1": metrics["macro_f1"],
         }]).to_csv(log_path, mode="a", index=False, header=False)
 
-        # Save checkpoint
+        
         torch.save(model.state_dict(), os.path.join(save_dir, f"epoch{epoch+1}.pth"))
 
     logger.write(f"\n[✔] Training complete. Metrics logged to {log_path}")
     logger.close()
 
 
-# ------------------------------------------------------------
-# Main
-# ------------------------------------------------------------
+
 def main():
     cfg = load_config("config.yaml")
 
@@ -158,10 +143,10 @@ def main():
 
     train_loader, val_loader, num_classes = build_dataloaders(cfg)
 
-    # Logger
+
     logger = Logger(log_dir="logs", filename="baseline_training.log")
 
-    # Model config — disable AU conditioning
+
     model_cfg = AUConditionedMAEConfig(
         image_size=cfg["data"]["img_size"],
         num_classes=num_classes,

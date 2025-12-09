@@ -1,16 +1,15 @@
-# main.py
 import argparse
 from training.ablation_runner import run_ablation
-
 from torch.utils.data import DataLoader, TensorDataset
 import torch
 from models.au_conditioned_mae import AUConditionedMAE, AUConditionedMAEConfig
 from utils.logging_utils import Logger
 from training.trainer_utils import train_epoch, validate_epoch
+from data.dataset_rafdb_au import RAFDB_AU_Dataset
+from data.transforms import get_train_transforms, get_val_transforms
 
 def run_training_example():
     
-    # Mock dataset
     B, N = 32, 100
 
     ds = TensorDataset(imgs, aus, labels)
@@ -30,11 +29,7 @@ def run_training_example():
     logger.close()
 
 
-# ================================
-# AU-MAE PRETRAINING (ADDED CODE)
-# ================================
-from data.dataset_rafdb_au import RAFDB_AU_Dataset
-from data.transforms import get_train_transforms, get_val_transforms
+
 
 def run_au_mae_pretrain(cfg_path):
     import yaml
@@ -44,8 +39,6 @@ def run_au_mae_pretrain(cfg_path):
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     
-
-    # ----- Load RAF-DB AU dataset -----
     train_ds = RAFDB_AU_Dataset(
         csv_path="splits/aus_raf_train.csv",
         root_dir=cfg["data"]["root_dir"],
@@ -77,14 +70,12 @@ def run_au_mae_pretrain(cfg_path):
 
     print(f"[INFO] Loaded RAF-DB AU dataset: {len(train_ds)} training samples")
 
-    # ----- Initialize AU-MAE model -----
     mae_cfg = AUConditionedMAEConfig(conditioning="both")
     model = AUConditionedMAE(mae_cfg).to(device)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg["train"]["lr"])
     logger = Logger()
 
-    # ----- Simple training loop (placeholder) -----
     for epoch in range(1, cfg["train"]["epochs"] + 1):
         print(f"\n[AU-MAE] Epoch {epoch}")
         train_epoch(model, train_loader, optimizer, device, logger, epoch)
@@ -105,14 +96,9 @@ if __name__ == "__main__":
 
     args = ap.parse_args()
 
-    # --- Add this small snippet ---
     print(f"\n[INFO] Using dataset: {args.dataset}")
     print(f"[INFO] Loading configuration from: {args.config}\n")
-    # ------------------------------
-
-    # ================================
-    # AU-MAE PRETRAINING MODE
-    # ================================
+    
     if args.mode == "pretrain_au_mae":
         run_au_mae_pretrain(args.config)
         exit()

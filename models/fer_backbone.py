@@ -1,4 +1,4 @@
-# models/fer_backbone.py
+
 import torch.nn as nn
 import torchvision.models as tvm
 
@@ -19,7 +19,7 @@ class FERClassifier(nn.Module):
         self.use_pose_normalizer = use_pose_normalizer
         self.backbone = backbone
         self.fc = nn.Linear(backbone.output_dim, num_classes)
-        # pose normalizer injected externally to keep ablations clean
+        
         self.pose_normalizer = None
 
     def attach_pose_normalizer(self, pose_normalizer):

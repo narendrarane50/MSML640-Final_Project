@@ -1,16 +1,9 @@
-# data:
-#   root_dir: "/path/to/rafdb/images"   # optional; leave null if CSV has absolute paths
-#   train_csv: "splits/rafdb_train.csv"
-#   val_csv:   "splits/rafdb_val.csv"
-#   img_size: 224
-
 data:
   root_dir: "datasets/RAF-DB"
   train_csv: "splits/rafdb_train.csv"
   val_csv:   "splits/rafdb_val.csv"
   img_size: 224
 
-  # NEW: AU CSVs for AU-MAE and Ablation C
   au_train_csv: "splits/aus_raf_train.csv"
   au_val_csv:   "splits/aus_raf_test.csv"
 
@@ -39,11 +32,9 @@ eval:
   batch_size: 128
 
 
-# ======================================================
-# FER-2013 Configuration
-# ======================================================
+
 fer2013:
-  root_dir: "datasets/FER-2013"     # top-level folder
+  root_dir: "datasets/FER-2013"     
   train_dir: "datasets/FER-2013/train"
   val_dir: "datasets/FER-2013/test"
   img_size: 224

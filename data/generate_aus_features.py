@@ -3,21 +3,21 @@ import pandas as pd
 from feat import Detector
 from tqdm import tqdm
 
-# Paths
+
 dataset_root = "datasets/RAF-DB/DATASET"
 output_csv = "datasets/RAF-DB/aus_features.csv"
 
-# Initialize FEAT detector (this downloads pretrained models automatically)
+
 detector = Detector(
     face_model="retinaface",
     landmark_model="mobilenet",
-    au_model="rf",        # or "svm"
+    au_model="rf",        
     emotion_model="resmasknet"
 )
 
 rows = []
 
-# Loop over all subfolders (1–7 emotions)
+
 for split in ["train", "test"]:
     for root, _, files in os.walk(os.path.join(dataset_root, split)):
         for f in tqdm(files, desc=f"Processing {split}"):
@@ -33,7 +33,7 @@ for split in ["train", "test"]:
             except Exception as e:
                 print(f"[!] Failed {img_path}: {e}")
 
-# Save
+
 df = pd.DataFrame(rows)
 df.to_csv(output_csv, index=False)
 print(f"[✓] Saved AU features to {output_csv} ({len(df)} rows, {len(df.columns)-1} AU columns)")

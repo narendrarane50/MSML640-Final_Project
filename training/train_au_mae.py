@@ -1,5 +1,3 @@
-# training/train_au_mae.py
-
 from torch.utils.data import DataLoader
 from data.dataset_rafdb_au import RAFDB_AU_Dataset
 from data.transforms import get_train_transforms, get_val_transforms
@@ -44,9 +42,5 @@ def train_au_mae(cfg):
     mae_cfg = AUConditionedMAEConfig(conditioning="both")
     model = AUConditionedMAE(mae_cfg).to(device)
 
-    # TODO: add your AU-MAE training loop here:
-    #  - forward with masking
-    #  - reconstruction loss + AU loss
-    #  - optimizer / epochs etc.
 
     print("[INFO] AU-MAE training stub ready (data pipeline works).")

@@ -1,4 +1,3 @@
-# training/ablation_runner.py
 import os, yaml, torch
 from torch import nn
 from tqdm import tqdm
@@ -8,7 +7,6 @@ from data.dataloader_utils import build_loader
 from models.fer_backbone import ResNet50Backbone, FERClassifier
 from models.pose_normalizer import PoseNormalizer
 from .evaluate import evaluate
-# --- Ablation C imports ---
 from models.au_conditioned_mae import AUConditionedMAE, AUConditionedMAEConfig
 from data.dataset_rafdb_au import RAFDB_AU_Dataset
 import numpy as np
@@ -39,7 +37,6 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
 
     save_dir = cfg["train"]["save_dir"]
 
-    # ----- datasets -----
     if dataset == "rafdb":
         train_ds, val_ds = build_rafdb(
             cfg["data"]["train_csv"], cfg["data"]["val_csv"],
@@ -68,7 +65,7 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
     train_loader = build_loader(train_ds, cfg["train"]["batch_size"], True, cfg["train"]["num_workers"])
     val_loader   = build_loader(val_ds,   cfg["eval"]["batch_size"],  False, cfg["train"]["num_workers"])
 
-    # ----- Ablation A: FER baseline (no pose normalization) -----
+
     print("\n[Ablation A] FER baseline (no pose normalization)")
     backbone = ResNet50Backbone(pretrained=True)
     model = FERClassifier(backbone, num_classes=cfg["model"]["num_classes"]).to(device)
@@ -82,39 +79,39 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
     print("Ablation A metrics:", metrics_A)
     save_metrics(metrics_A, save_dir, tag="ablation_A_no_pose")
 
-    # ----- Ablation B: FER + PoseNormalizer -----
+    
     print("\n[Ablation B] FER + PoseNormalizer")
     backbone2 = ResNet50Backbone(pretrained=True)
     model2 = FERClassifier(backbone2, num_classes=cfg["model"]["num_classes"], use_pose_normalizer=True).to(device)
 
-    # attach pose normalizer
+    
     pose_norm = PoseNormalizer().to(device)
     model2.attach_pose_normalizer(pose_norm)
 
-    # two learning rates: lower for FER backbone, slightly higher for PoseNormalizer
+    
     optimizer2 = torch.optim.AdamW([
-        # {"params": model2.pose_normalizer.parameters(), "lr": cfg["train"]["lr"] * 0.5},
+        
         {"params": model2.pose_normalizer.parameters(), "lr": cfg["train"]["lr"] * 0.05},
         {"params": [p for n, p in model2.named_parameters() if "pose_normalizer" not in n], "lr": cfg["train"]["lr"] * 0.1}
     ], weight_decay=cfg["train"]["wd"])
 
     criterion = nn.CrossEntropyLoss()
 
-    # --- Warmup: train PoseNormalizer standalone for 1 epoch ---
+    
     print("\n[Warmup] Training PoseNormalizer only for 1 epoch")
     pose_optimizer = torch.optim.Adam(model2.pose_normalizer.parameters(), lr=1e-4)
     for imgs, _ in tqdm(train_loader, desc="Warmup PoseNormalizer"):
         imgs = imgs.to(device)
         pose_optimizer.zero_grad(set_to_none=True)
         warped = model2.pose_normalizer(imgs)
-        # Identity-consistency loss (keeps transform near identity)
+        
         loss = ((warped - imgs) ** 2).mean()
         loss.backward()
         pose_optimizer.step()
     print("[✓] Warmup complete — PoseNormalizer stabilized.\n")
 
     for epoch in range(cfg["train"]["epochs"]):
-        # --- Phase 1: freeze FER backbone for first 2 epochs ---
+        
         if epoch < 2:
             for name, param in model2.named_parameters():
                 if "pose_normalizer" not in name:
@@ -130,12 +127,10 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
     print("Ablation B metrics:", metrics_B)
     save_metrics(metrics_B, save_dir, tag="ablation_B_pose")
 
-    # ============================================
-    # Ablation C — AU-MAE pretrained → Fine-tuned FER
-    # ============================================
+    
     print("\n[Ablation C] AU-MAE pretrained → Fine-tuned on RAF-DB")
 
-    # 1) Load AU-MAE model + pretrained weights
+    
     mae_cfg = AUConditionedMAEConfig(conditioning="both")
     modelC = AUConditionedMAE(mae_cfg).to(device)
 
@@ -145,24 +140,10 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
     print("[Ablation C] Loading: au_mae_pretrained.pth")
     modelC.load_state_dict(torch.load("au_mae_pretrained.pth", map_location=device))
 
-    # # 2) Freeze encoder blocks 0–7
-    # for i, blk in enumerate(modelC.encoder.blocks):
-    #     if i < 8:
-    #         for p in blk.parameters():
-    #             p.requires_grad = False
-
-    # # 3) Unfreeze blocks 8–11 + classifier
-    # for i, blk in enumerate(modelC.encoder.blocks):
-    #     if i >= 8:
-    #         for p in blk.parameters():
-    #             p.requires_grad = True
-
-    # for p in modelC.classifier.parameters():
-    #     p.requires_grad = True
 
     print("[Ablation C] Freezing encoder blocks 0–3, training blocks 4–11")
 
-    # Freeze all parameters first
+    
     for param in modelC.parameters():
         param.requires_grad = False
 
@@ -172,11 +153,11 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
         for name, param in modelC.encoder.blocks[idx].named_parameters():
             param.requires_grad = True
 
-    # Also unfreeze classifier head
+    
     for param in modelC.classifier.parameters():
         param.requires_grad = True
 
-    # 4) Build RAF-DB AU dataset
+    
     train_dsC = RAFDB_AU_Dataset(
         csv_path=cfg["data"]["au_train_csv"],
         root_dir=cfg["data"]["root_dir"],
@@ -193,7 +174,7 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
     train_loaderC = build_loader(train_dsC, cfg["train"]["batch_size"], True, cfg["train"]["num_workers"])
     val_loaderC   = build_loader(val_dsC,   cfg["eval"]["batch_size"],  False, cfg["train"]["num_workers"])
 
-    # 5) Optimizer — smaller LR for encoder, full LR for classifier + last 6 blocks
+    
     enc_params = []
     head_params = []
 
@@ -201,29 +182,26 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
         if not param.requires_grad:
             continue
 
-        # classifier: high LR
+        
         if "classifier" in name:
             head_params.append(param)
 
-        # last 6 blocks: high LR
+        
         elif any(f"encoder.blocks.{i}" in name for i in range(6, 12)):
             head_params.append(param)
 
-        # everything else (unfrozen parts)
+        
         else:
             enc_params.append(param)
 
-    # optimizerC = torch.optim.AdamW([
-    #     {"params": enc_params,  "lr": cfg["train"]["lr"] * 0.05},
-    #     {"params": head_params, "lr": cfg["train"]["lr"]},
-    # ], weight_decay=cfg["train"]["wd"])
+    
 
     optimizerC = torch.optim.AdamW([
         {"params": enc_params,  "lr": 1e-4},
         {"params": head_params, "lr": 5e-4},
     ], weight_decay=cfg["train"]["wd"])
 
-    # 6) Train for cfg["train"]["epochs"] epochs (or 10 if you're testing)
+    
     criterionC = nn.CrossEntropyLoss(label_smoothing=0.0)
     for epoch in range(cfg["train"]["epochs"]):
         modelC.train()
@@ -231,7 +209,7 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
         for imgs, aus, labels in train_loaderC:
             imgs, aus, labels = imgs.to(device), aus.to(device), labels.to(device)
             optimizerC.zero_grad()
-            # Forward WITHOUT internal loss; we compute our own with label smoothing
+            
             out = modelC(imgs, aus, labels=None, mask_ratio=0.0, return_loss=False)
             logits = out["logits"]
             loss = criterionC(logits, labels)
@@ -240,9 +218,7 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
             running += loss.item() * imgs.size(0)
         print(f"[Ablation C] Epoch {epoch+1} | loss={running/len(train_loaderC.dataset):.4f}")
 
-    # --------------------------
-    # Ablation C Evaluation (full metrics)
-    # --------------------------
+    
     
 
     def evaluate_ablation_c(model, dataloader, device):
@@ -293,7 +269,7 @@ def run_ablation(cfg_path="config.yaml", dataset="rafdb"):
         "au_mae_finetune": metrics_c
     }
 
-    # return {"au_mae_finetune": metrics_C}
+    
 
 
 

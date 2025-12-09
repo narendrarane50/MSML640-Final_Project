@@ -1,11 +1,3 @@
-"""
-visualization.py
-------------------------------------------------------------
-Generic visualization utility for training metrics.
-Usage:
-    python visualization.py --csv checkpoints_baseline/metrics_log.csv --out_dir results/
-"""
-
 import os
 import argparse
 import pandas as pd

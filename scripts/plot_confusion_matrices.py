@@ -2,12 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-# Paths
 LOG_DIR = "logs/checkpoints_baseline"
 OUT_DIR = "logs/figures"
 os.makedirs(OUT_DIR, exist_ok=True)
 
-# RAF-DB class names (adjust if needed)
 classes = [
     "Surprise", "Fear", "Disgust", "Happiness",
     "Sadness", "Anger", "Neutral"
@@ -31,7 +29,7 @@ def plot_cm(cm, title, out_path):
     plt.savefig(out_path, dpi=300)
     plt.close()
 
-# --- Ablation A ---
+
 cm_A = np.load(os.path.join(LOG_DIR, "ablation_A_no_pose_confusion.npy"))
 plot_cm(
     cm_A,
@@ -39,7 +37,6 @@ plot_cm(
     os.path.join(OUT_DIR, "ablation_A_confusion_matrix.png")
 )
 
-# --- Ablation B ---
 cm_B = np.load(os.path.join(LOG_DIR, "ablation_B_pose_confusion.npy"))
 plot_cm(
     cm_B,
@@ -47,7 +44,6 @@ plot_cm(
     os.path.join(OUT_DIR, "ablation_B_confusion_matrix.png")
 )
 
-# --- Ablation C ---
 cm_C = np.load(os.path.join(LOG_DIR, "ablation_C_au_mae_confusion.npy"))
 plot_cm(
     cm_C,

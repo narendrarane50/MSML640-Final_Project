@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 from .model_utils import trunc_normal_, PatchEmbed, MLP, Attention, TransformerBlock
 
-# MAE encoder
+
 class MAEEncoder(nn.Module):
     def __init__(self, embed_dim, depth, num_heads, mlp_ratio):
         super().__init__()

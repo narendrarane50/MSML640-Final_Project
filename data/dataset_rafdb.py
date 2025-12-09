@@ -1,4 +1,4 @@
-# data/dataset_rafdb.py
+
 from .dataset_base import CSVDataset
 import torch
 import pandas as pd
@@ -14,7 +14,7 @@ class RAFDBDatasetWithAUs(Dataset):
         self.df = pd.read_csv(csv_path)
         self.transform = transform
 
-        # Identify AU columns automatically if not given
+        
         if au_cols is None:
             au_cols = [c for c in self.df.columns if c.startswith("AU")]
         self.au_cols = au_cols
@@ -27,11 +27,11 @@ class RAFDBDatasetWithAUs(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        # Extract AU vector
+        
         aus = torch.tensor(row[self.au_cols].values, dtype=torch.float32)
 
-        # Normalize AUs to [0,1] range
-        aus = torch.clamp(aus, 0, 5) / 5.0  # typical OpenFace range 0–5
+        
+        aus = torch.clamp(aus, 0, 5) / 5.0  
 
         return image, aus, label
 

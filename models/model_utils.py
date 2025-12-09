@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 
 def trunc_normal_(tensor, std=0.02):
-    # Same spirit as timm's trunc_normal_
+    
     with torch.no_grad():
         size = tensor.shape
         tmp = tensor.new_empty(size + (4,)).normal_()
@@ -30,8 +30,8 @@ class PatchEmbed(nn.Module):
         self.num_patches = self.grid_size[0] * self.grid_size[1]
         self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=self.patch_size, stride=self.patch_size)
 
-    def forward(self, x):  # (B,3,H,W) -> (B, N, D)
-        x = self.proj(x)  # (B, D, Hg, Wg)
+    def forward(self, x):  
+        x = self.proj(x)  
         x = x.flatten(2).transpose(1, 2)
         return x
 
@@ -69,9 +69,9 @@ class Attention(nn.Module):
 
     def forward(self, x):
         B, N, C = x.shape
-        qkv = self.qkv(x)  # (B, N, 3C)
+        qkv = self.qkv(x)  
         qkv = qkv.reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
-        q, k, v = qkv[0], qkv[1], qkv[2]  # (B, heads, N, head_dim)
+        q, k, v = qkv[0], qkv[1], qkv[2]  
 
         attn = (q @ k.transpose(-2, -1)) * self.scale
         attn = attn.softmax(dim=-1)

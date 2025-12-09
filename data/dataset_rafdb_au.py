@@ -7,25 +7,15 @@ import torch
 
 
 class RAFDB_AU_Dataset(Dataset):
-    """
-    RAF-DB dataset with Action Units for AU-MAE pretraining.
-
-    CSV format:
-        AU01, AU02, ... AU43, filename, emotion
-
-    Returns:
-        image: Tensor [3,H,W]
-        aus:   Tensor [20]
-        label: int (0..6)     # emotion label
-    """
+    
 
     def __init__(self, csv_path, root_dir, transform=None, split="train"):
         self.df = pd.read_csv(csv_path)
         self.root_dir = root_dir
         self.transform = transform
-        self.split = split  # "train" or "test"
+        self.split = split  
 
-        # AU columns (all columns starting with 'AU')
+        
         self.au_columns = [c for c in self.df.columns if c.startswith("AU")]
 
         print(f"[INFO] AU columns detected: {self.au_columns}")
@@ -40,11 +30,11 @@ class RAFDB_AU_Dataset(Dataset):
         filename = row["filename"]
         label = int(row["emotion"]) - 1
 
-        # Use split ("train" or "test") to choose folder
+       
         img_path = os.path.join(
             self.root_dir,
             "DATASET",
-            self.split,           # "train" or "test"
+            self.split,           
             str(row["emotion"]),
             filename,
         )

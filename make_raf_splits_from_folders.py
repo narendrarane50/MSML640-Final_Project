@@ -1,6 +1,5 @@
 import os, csv
 
-# Base directory containing DATASET folder
 base_dir = "datasets/RAF-DB/DATASET"
 output_dir = "splits"
 os.makedirs(output_dir, exist_ok=True)
@@ -19,7 +18,7 @@ def create_split(split_name):
             continue
         for fname in os.listdir(folder):
             if fname.lower().endswith((".jpg", ".png", ".jpeg")):
-                # Store relative path from inside DATASET
+                
                 rel_path = os.path.join("DATASET", split_name, lbl_folder, fname)
                 rows.append([rel_path, lbl_id])
 
